@@ -2,7 +2,7 @@ module github.com/MrwanBaghdad/hass-tailscale-lambda
 
 go 1.23.1
 
-toolchain go1.23.5
+toolchain go1.23.0
 
 require (
 	github.com/aws/aws-lambda-go v1.47.0
