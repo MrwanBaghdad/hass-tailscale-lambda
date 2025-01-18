@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -179,8 +180,19 @@ func (h *LambdaHandler) createHTTPClient() *http.Client {
 func main() {
 	var tsNetServer *tsnet.Server = nil
 	if v := os.Getenv("TS_AUTHKEY"); v != "" {
+		// mustDirExist("data")
 		tsNetServer = &tsnet.Server{
-			AuthKey: v,
+			AuthKey:   v,
+			Ephemeral: true,
+			Hostname:  "hass-alexa-lambda",
+			Dir:       "data",
+		}
+		defer tsNetServer.Close()
+
+		ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+		_, err := tsNetServer.Up(ctx)
+		if err != nil {
+			log.Fatal("Failed to connect to tailnet: %w", err)
 		}
 	}
 	handler := NewLambdaHandler(tsNetServer)

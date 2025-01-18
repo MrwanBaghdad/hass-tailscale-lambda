@@ -1,12 +1,11 @@
 FROM golang:1.23-alpine as build
+
 WORKDIR /build
-
-
-# Run on container startup.
-ENTRYPOINT ["/var/runtime/bootstrap"]
 
 # Copy dependencies list
 COPY go.mod go.sum ./
+RUN go mod download
+
 # Build with optional lambda.norpc tag
 COPY main.go .
 RUN go build -tags lambda.norpc -o main main.go
