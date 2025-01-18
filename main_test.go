@@ -68,7 +68,7 @@ func TestHandleRequest_Discovery(t *testing.T) {
 	os.Setenv("BASE_URL", mockServer.URL)
 
 	// Initialize the handler
-	handler := NewLambdaHandler()
+	handler := NewLambdaHandler(nil)
 
 	// Define the Discovery event
 	event := map[string]interface{}{

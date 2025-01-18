@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"tailscale.com/tsnet"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
@@ -22,9 +23,10 @@ type LambdaHandler struct {
 	LongLivedToken string
 	VerifySSL      bool
 	Logger         *zap.Logger
+	TSNetServer    *tsnet.Server
 }
 
-func NewLambdaHandler() *LambdaHandler {
+func NewLambdaHandler(tsNetServer *tsnet.Server) *LambdaHandler {
 	baseURL := strings.TrimRight(os.Getenv("BASE_URL"), "/")
 	if baseURL == "" {
 		panic("Please set BASE_URL environment variable")
@@ -42,13 +44,18 @@ func NewLambdaHandler() *LambdaHandler {
 	longLivedToken := os.Getenv("LONG_LIVED_ACCESS_TOKEN")
 	verifySSL := os.Getenv("NOT_VERIFY_SSL") != "true"
 
-	return &LambdaHandler{
+	h := &LambdaHandler{
 		BaseURL:        baseURL,
 		Debug:          debug,
 		LongLivedToken: longLivedToken,
 		VerifySSL:      verifySSL,
 		Logger:         logger,
 	}
+
+	if tsNetServer != nil {
+		h.TSNetServer = tsNetServer
+	}
+	return h
 }
 
 func (h *LambdaHandler) HandleRequest(ctx context.Context, event map[string]interface{}) (map[string]interface{}, error) {
@@ -148,9 +155,15 @@ func (h *LambdaHandler) errorType(statusCode int) string {
 }
 
 func (h *LambdaHandler) createHTTPClient() *http.Client {
-	client := &http.Client{
-		Timeout: 10 * time.Second,
+	var client *http.Client
+	if h.TSNetServer != nil {
+		client = h.TSNetServer.HTTPClient()
+		return client
+	} else {
+		client = &http.Client{}
+
 	}
+	client.Timeout = 10 * time.Second
 
 	if !h.VerifySSL {
 		// Skip SSL verification
@@ -164,6 +177,12 @@ func (h *LambdaHandler) createHTTPClient() *http.Client {
 }
 
 func main() {
-	handler := NewLambdaHandler()
+	var tsNetServer *tsnet.Server = nil
+	if v := os.Getenv("TS_AUTHKEY"); v != "" {
+		tsNetServer = &tsnet.Server{
+			AuthKey: v,
+		}
+	}
+	handler := NewLambdaHandler(tsNetServer)
 	lambda.Start(handler.HandleRequest)
 }
