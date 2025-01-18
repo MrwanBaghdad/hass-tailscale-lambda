@@ -180,12 +180,15 @@ func (h *LambdaHandler) createHTTPClient() *http.Client {
 func main() {
 	var tsNetServer *tsnet.Server = nil
 	if v := os.Getenv("TS_AUTHKEY"); v != "" {
-		// mustDirExist("data")
+		dir := os.Getenv("TS_DIR")
+		if dir == "" {
+			dir = "/tmp/data"
+		}
 		tsNetServer = &tsnet.Server{
 			AuthKey:   v,
 			Ephemeral: true,
 			Hostname:  "hass-alexa-lambda",
-			Dir:       "data",
+			Dir:       dir,
 		}
 		defer tsNetServer.Close()
 
