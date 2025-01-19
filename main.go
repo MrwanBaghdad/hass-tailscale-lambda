@@ -84,10 +84,7 @@ func (h *LambdaHandler) HandleRequest(ctx context.Context, event map[string]inte
 		return nil, fmt.Errorf("only support BearerToken")
 	}
 
-	token, _ := scope["token"].(string)
-	if token == "" && h.Debug {
-		token = h.LongLivedToken
-	}
+	token := h.LongLivedToken
 
 	client := h.createHTTPClient()
 
